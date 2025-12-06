@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Tenant = require('../models/Tenant');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'xeno-fde-secret-key-2025';
 
@@ -13,12 +14,24 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'Email already registered' });
         }
 
+        // Ensure default tenant exists
+        const tenantIdToUse = tenant_id || 'demo-store';
+        const [tenant] = await Tenant.findOrCreate({
+            where: { id: tenantIdToUse },
+            defaults: {
+                id: tenantIdToUse,
+                store_name: 'Demo Store',
+                shopify_domain: process.env.SHOPIFY_STORE_DOMAIN || 'demo-store.myshopify.com',
+                access_token: process.env.SHOPIFY_ACCESS_TOKEN || null,
+            }
+        });
+
         // Create user
         const user = await User.create({
             email,
             password,
             name,
-            tenant_id: tenant_id || 'demo-store',
+            tenant_id: tenantIdToUse,
         });
 
         // Generate token
