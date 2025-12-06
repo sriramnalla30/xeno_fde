@@ -99,6 +99,46 @@ const getOrdersByDate = async (req, res) => {
     }
 };
 
+const getOrdersByTime = async (req, res) => {
+    const { tenant } = req;
+    const { days = 7 } = req.query;
+
+    try {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - parseInt(days));
+
+        const orders = await Order.findAll({
+            where: {
+                tenant_id: tenant.id,
+                created_at_shopify: {
+                    [Op.gte]: startDate,
+                },
+            },
+            attributes: [
+                [sequelize.fn('HOUR', sequelize.col('created_at_shopify')), 'hour'],
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+                [sequelize.fn('SUM', sequelize.col('total_price')), 'revenue'],
+            ],
+            group: [sequelize.fn('HOUR', sequelize.col('created_at_shopify'))],
+            order: [[sequelize.fn('HOUR', sequelize.col('created_at_shopify')), 'ASC']],
+            raw: true,
+        });
+
+        // Format hours for display (e.g., "9 AM", "10 AM")
+        const formattedOrders = orders.map(order => ({
+            ...order,
+            time: order.hour < 12
+                ? `${order.hour === 0 ? 12 : order.hour} AM`
+                : `${order.hour === 12 ? 12 : order.hour - 12} PM`
+        }));
+
+        res.json(formattedOrders);
+    } catch (error) {
+        console.error('Error fetching orders by time:', error);
+        res.status(500).json({ error: 'Failed to fetch orders by time' });
+    }
+};
+
 const getProducts = async (req, res) => {
     const { tenant } = req;
 
@@ -114,4 +154,5 @@ const getProducts = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getRecentOrders, getTopCustomers, getOrdersByDate, getProducts };
+module.exports = { getDashboardStats, getRecentOrders, getTopCustomers, getOrdersByDate, getOrdersByTime, getProducts };
+

@@ -27,6 +27,7 @@ export const getStats = () => api.get('/dashboard/stats');
 export const getRecentOrders = (params) => api.get('/dashboard/orders', { params });
 export const getTopCustomers = (limit) => api.get('/dashboard/top-customers', { params: { limit } });
 export const getOrdersByDate = (days) => api.get('/dashboard/orders-by-date', { params: { days } });
+export const getOrdersByTime = (days) => api.get('/dashboard/orders-by-time', { params: { days } });
 export const getProducts = () => api.get('/dashboard/products');
 export const ingestData = () => api.post('/ingest');
 

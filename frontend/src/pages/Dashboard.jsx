@@ -1,29 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, ShoppingCart, Users, Package, TrendingUp, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
-import { getStats, getRecentOrders, getTopCustomers, getOrdersByDate, ingestData } from '../services/api';
+import { getStats, getRecentOrders, getTopCustomers, getOrdersByDate, getOrdersByTime, ingestData } from '../services/api';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({ totalCustomers: 0, totalOrders: 0, totalRevenue: 0, totalProducts: 0, avgOrderValue: 0 });
     const [recentOrders, setRecentOrders] = useState([]);
     const [topCustomers, setTopCustomers] = useState([]);
     const [ordersByDate, setOrdersByDate] = useState([]);
+    const [ordersByTime, setOrdersByTime] = useState([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [dateRange, setDateRange] = useState(30);
 
     const fetchData = async () => {
         try {
-            const [statsRes, ordersRes, customersRes, dateOrdersRes] = await Promise.all([
+            const [statsRes, ordersRes, customersRes, dateOrdersRes, timeOrdersRes] = await Promise.all([
                 getStats(),
                 getRecentOrders(),
                 getTopCustomers(5),
                 getOrdersByDate(dateRange),
+                getOrdersByTime(dateRange),
             ]);
             setStats(statsRes.data);
             setRecentOrders(ordersRes.data);
             setTopCustomers(customersRes.data);
             setOrdersByDate(dateOrdersRes.data);
+            setOrdersByTime(timeOrdersRes.data);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
         } finally {
@@ -136,12 +139,12 @@ const Dashboard = () => {
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Revenue Trend */}
+                {/* Revenue Trend by Time */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Revenue Trend</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Revenue by Time of Day</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={ordersByDate}>
+                            <AreaChart data={ordersByTime}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3} />
@@ -149,7 +152,7 @@ const Dashboard = () => {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                <XAxis dataKey="date" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                                <XAxis dataKey="time" tick={{ fill: '#6B7280', fontSize: 12 }} />
                                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px' }}
@@ -238,8 +241,8 @@ const Dashboard = () => {
                                         </td>
                                         <td className="py-4">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${order.financial_status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                    order.financial_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-red-100 text-red-700'
+                                                order.financial_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-red-100 text-red-700'
                                                 }`}>
                                                 {order.financial_status}
                                             </span>
